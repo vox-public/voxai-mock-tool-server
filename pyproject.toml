@@ -1,19 +1,21 @@
-[project]
+[tool.poetry]
 name = "voxai-client-server"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "VoxAI Skeleton"}
+    "VoxAI Skeleton"
 ]
 readme = "README.md"
-requires-python = ">=3.11"
-dependencies = [
-    "fastapi (>=0.115.13,<0.116.0)",
-    "uvicorn[standard] (>=0.34.3,<0.35.0)",
-    "pydantic (>=2.11.7,<3.0.0)",
-    "httpx (>=0.28.1,<0.29.0)",
-    "python-dotenv (>=1.1.0,<2.0.0)"
-]
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = ">=3.11"
+fastapi = ">=0.115.13,<0.116.0"
+uvicorn = {version = ">=0.34.3,<0.35.0", extras = ["standard"]}
+pydantic = ">=2.11.7,<3.0.0"
+httpx = ">=0.28.1,<0.29.0"
+python-dotenv = ">=1.1.0,<2.0.0"
+pydantic-settings = ">=2.4.0,<3.0.0"
 
 
 [build-system]
