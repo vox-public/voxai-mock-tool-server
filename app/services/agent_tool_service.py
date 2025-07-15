@@ -34,12 +34,161 @@ class AgentToolService:
             return await self._handle_control_ev_system(payload)
         elif tool_name == "create_support_ticket":
             return await self._handle_create_support_ticket(payload)
+        elif tool_name == "submit_zendesk_ticket":
+            return await self._handle_submit_zendesk_ticket(payload)
+        elif tool_name == "check_flight_ticket":
+            return await self._handle_check_flight_ticket(payload)
         else:
             logger.warning(f"알 수 없는 도구 호출: {tool_name}")
             return {
                 "error": f"알 수 없는 도구: {tool_name}",
                 "details": "이 도구는 백엔드에 구현되지 않았습니다.",
             }
+
+    async def _handle_submit_zendesk_ticket(
+        self, payload: AgentToolRequestPayload
+    ) -> AgentToolResponsePayload:
+        """
+        젠데스크 티켓 제출 도구 처리
+        SOP의 '젠데스크_티켓_제출' 도구에 대응
+        """
+        return {
+            "status": "success",
+            "message": "젠데스크 티켓 제출 완료",
+            "ticket_id": "1234567890",
+        }
+
+    async def _handle_check_flight_ticket(
+        self, payload: AgentToolRequestPayload
+    ) -> AgentToolResponsePayload:
+        """
+        항공권 예매 확인 도구 처리
+        SOP의 '항공권_예매_확인' 도구에 대응
+        """
+        return {
+            "meta": {},
+            "result": {
+                "data": [
+                    {
+                        "PNR_SEQNO": 10343878,
+                        "DI_FLAG": "I",
+                        "STOCK_AIR_CD": "TW",
+                        "STOCK_AIR_NM": "티웨이항공",
+                        "TRIP_TYPE_CD": "RT",
+                        "TRIP_TYPE_NM": "왕복",
+                        "RSV_INWON": 2,
+                        "RSV_NO": "DTJZUK",
+                        "RSV_USR_NM": "이정미",
+                        "RSV_STATUS_CD": "RMTK",
+                        "RSV_STATUS_NM": "발권완료",
+                        "DEP_DTM": "20250801195500",
+                        "ARR_DTM": "20250809000500",
+                        "RSV_DTM": "20250714183734",
+                        "PAY_TL": "20250714183700",
+                        "PNR_SEAT_STATUS_CD": "RK",
+                        "PNR_SEAT_STATUS_NM": "확약",
+                        "PAY_STATUS_CD": "PAQK",
+                        "PAY_STATUS_NM": "결제요청",
+                        "ISSUE_STATUS_CD": "TKKY",
+                        "ISSUE_STATUS_NM": "발권완료",
+                        "SALE_TOT_AMT": 0,
+                        "SEG_RSV_YN": "Y",
+                        "CANCEL_YN": "N",
+                        "FARE_CONFM_YN": "Y",
+                        "MIJUNG_AMT_YN": "Y",
+                        "PROOF_DOC_REQUIRE_YN": "N",
+                        "PROOF_DOC_CONFM_YN": "N",
+                        "ALPHA_PNR_NO": "DTJZUK",
+                        "ITIN_NO": 1,
+                        "ITIN_BUNDLE_UNIT": "1",
+                        "FLTNO": "TW191",
+                        "FLT_AIR_CD": "TW",
+                        "FLT_AIR_NM": "티웨이항공",
+                        "DEP_CITY_CD": "TAE",
+                        "DEP_CITY_NM": "대구",
+                        "DEP_AIRPORT_CD": "TAE",
+                        "DEP_AIRPORT_NM": "대구",
+                        "DEP_DATE": "20250801",
+                        "DEP_TM": "1955",
+                        "ARR_CITY_CD": "NHA",
+                        "ARR_CITY_NM": "나트랑",
+                        "ARR_AIRPORT_CD": "CXR",
+                        "ARR_AIRPORT_NM": "나트랑/캄란",
+                        "ARR_DATE": "20250801",
+                        "ARR_TM": "2250",
+                        "AUTO_ISSUE_YN": "N",
+                        "STOP_OVER_YN": "N",
+                        "ATC_REISSUE_FLAG": "N",
+                        "FLIGHTS_STATUS": "발권완료",
+                        "FLIGHTS_STATUS_CD": "FLTY",
+                        "CODESHARE_YN": "N",
+                        "CODESHARE_AIR_CD": "",
+                        "CODESHARE_AIR_NM": "",
+                        "CODESHARE_CD_IMG": "",
+                    },
+                    {
+                        "PNR_SEQNO": 10343878,
+                        "DI_FLAG": "I",
+                        "STOCK_AIR_CD": "TW",
+                        "STOCK_AIR_NM": "티웨이항공",
+                        "TRIP_TYPE_CD": "RT",
+                        "TRIP_TYPE_NM": "왕복",
+                        "RSV_INWON": 2,
+                        "RSV_NO": "DTJZUK",
+                        "RSV_USR_NM": "이정미",
+                        "RSV_STATUS_CD": "RMTK",
+                        "RSV_STATUS_NM": "발권완료",
+                        "DEP_DTM": "20250801195500",
+                        "ARR_DTM": "20250809000500",
+                        "RSV_DTM": "20250714183734",
+                        "PAY_TL": "20250714183700",
+                        "PNR_SEAT_STATUS_CD": "RK",
+                        "PNR_SEAT_STATUS_NM": "확약",
+                        "PAY_STATUS_CD": "PAQK",
+                        "PAY_STATUS_NM": "결제요청",
+                        "ISSUE_STATUS_CD": "TKKY",
+                        "ISSUE_STATUS_NM": "발권완료",
+                        "SALE_TOT_AMT": 0,
+                        "SEG_RSV_YN": "Y",
+                        "CANCEL_YN": "N",
+                        "FARE_CONFM_YN": "Y",
+                        "MIJUNG_AMT_YN": "Y",
+                        "PROOF_DOC_REQUIRE_YN": "N",
+                        "PROOF_DOC_CONFM_YN": "N",
+                        "ALPHA_PNR_NO": "DTJZUK",
+                        "ITIN_NO": 2,
+                        "ITIN_BUNDLE_UNIT": "2",
+                        "FLTNO": "TW192",
+                        "FLT_AIR_CD": "TW",
+                        "FLT_AIR_NM": "티웨이항공",
+                        "DEP_CITY_CD": "NHA",
+                        "DEP_CITY_NM": "나트랑",
+                        "DEP_AIRPORT_CD": "CXR",
+                        "DEP_AIRPORT_NM": "나트랑/캄란",
+                        "DEP_DATE": "20250809",
+                        "DEP_TM": "0005",
+                        "ARR_CITY_CD": "TAE",
+                        "ARR_CITY_NM": "대구",
+                        "ARR_AIRPORT_CD": "TAE",
+                        "ARR_AIRPORT_NM": "대구",
+                        "ARR_DATE": "20250809",
+                        "ARR_TM": "0720",
+                        "AUTO_ISSUE_YN": "N",
+                        "STOP_OVER_YN": "N",
+                        "ATC_REISSUE_FLAG": "N",
+                        "FLIGHTS_STATUS": "발권완료",
+                        "FLIGHTS_STATUS_CD": "FLTY",
+                        "CODESHARE_YN": "N",
+                        "CODESHARE_AIR_CD": "",
+                        "CODESHARE_AIR_NM": "",
+                        "CODESHARE_CD_IMG": "",
+                    },
+                ],
+                "status": 200,
+                "message": "SUCCESS",
+                "code": "success",
+            },
+        }
 
     async def _handle_monitor_ev_system(
         self, payload: AgentToolRequestPayload
