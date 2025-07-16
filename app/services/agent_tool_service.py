@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import random
+import re
 from app.core.logging import get_logger
 from app.models.tool_models import AgentToolRequestPayload, AgentToolResponsePayload
 
@@ -38,6 +39,16 @@ class AgentToolService:
             return await self._handle_submit_zendesk_ticket(payload)
         elif tool_name == "check_flight_ticket":
             return await self._handle_check_flight_ticket(payload)
+        elif tool_name == "validate_pnr_format":
+            return await self._handle_validate_pnr_format(payload)
+        elif tool_name == "determine_urgency_and_sla":
+            return await self._handle_determine_urgency_and_sla(payload)
+        elif tool_name == "schedule_priority_callback":
+            return await self._handle_schedule_priority_callback(payload)
+        elif tool_name == "submit_detailed_zendesk_ticket":
+            return await self._handle_submit_detailed_zendesk_ticket(payload)
+        elif tool_name == "save_csat_survey":
+            return await self._handle_save_csat_survey(payload)
         else:
             logger.warning(f"알 수 없는 도구 호출: {tool_name}")
             return {
@@ -366,3 +377,192 @@ class AgentToolService:
                 days_added += 1
 
         return current_date
+
+    async def _handle_validate_pnr_format(
+        self, payload: AgentToolRequestPayload
+    ) -> AgentToolResponsePayload:
+        """
+        PNR 번호 형식 검증 도구
+        SOP Phase 2.1.b에 대응
+        """
+        pnr_input = payload.get("pnr_input", "").strip().upper()
+        
+        if not pnr_input:
+            return {
+                "status": "error",
+                "message": "PNR 번호가 제공되지 않았습니다.",
+                "valid": False,
+                "error_code": "MISSING_PNR"
+            }
+        
+        # PNR 형식 검증: 6자리 영문+숫자 조합
+        pnr_pattern = re.compile(r'^[A-Z0-9]{6}$')
+        
+        if pnr_pattern.match(pnr_input):
+            return {
+                "status": "success",
+                "message": "유효한 PNR 형식입니다.",
+                "valid": True,
+                "pnr": pnr_input
+            }
+        else:
+            return {
+                "status": "error", 
+                "message": "잘못된 PNR 형식입니다. 6자리 영문과 숫자 조합이어야 합니다.",
+                "valid": False,
+                "error_code": "INVALID_PNR_FORMAT"
+            }
+
+    async def _handle_determine_urgency_and_sla(
+        self, payload: AgentToolRequestPayload
+    ) -> AgentToolResponsePayload:
+        """
+        긴급도 및 SLA 자동 판정 도구
+        SOP Phase 4.1.a에 대응
+        """
+        inquiry_keywords = payload.get("inquiry_keywords", "")
+        
+        # 키워드 문자열을 리스트로 변환
+        keywords_list = [keyword.strip() for keyword in inquiry_keywords.split(",") if keyword.strip()]
+        
+        urgency = "Normal"
+        assigned_team = "일반상담팀"
+        
+        # 키워드 기반 판정
+        urgent_keywords = ["긴급", "오늘", "지금", "당장", "공항", "출발"]
+        change_keywords = ["변경", "수정", "바꾸기"]
+        refund_keywords = ["환불", "취소", "돌려받기"]
+        
+        keywords_text = " ".join(keywords_list)
+        
+        if any(keyword in keywords_text for keyword in urgent_keywords):
+            urgency = "Critical"
+        
+        if any(keyword in keywords_text for keyword in change_keywords):
+            assigned_team = "항공권 변경팀"
+        elif any(keyword in keywords_text for keyword in refund_keywords):
+            assigned_team = "환불팀"
+        
+        return {
+            "status": "success",
+            "urgency": urgency,
+            "assigned_team": assigned_team,
+            "message": f"긴급도: {urgency}, 담당팀: {assigned_team}로 판정되었습니다.",
+            "keywords_processed": keywords_list
+        }
+
+    async def _handle_schedule_priority_callback(
+        self, payload: AgentToolRequestPayload
+    ) -> AgentToolResponsePayload:
+        """
+        우선순위 콜백 스케줄링 도구
+        SOP Phase 4.2.a에 대응
+        """
+        inquiry_summary = payload.get("inquiry_summary", "")
+        urgency = payload.get("urgency", "Normal")
+        
+        # 콜백 ID 생성
+        callback_id = f"CB-{datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(1000, 9999)}"
+        
+        # 우선순위별 예상 대기시간
+        if urgency == "Critical":
+            estimated_wait_time = "5분 이내"
+            priority_level = 1
+        elif urgency == "High":
+            estimated_wait_time = "15분 이내"
+            priority_level = 2
+        else:
+            estimated_wait_time = "30분 이내"
+            priority_level = 3
+        
+        return {
+            "status": "success",
+            "callback_id": callback_id,
+            "priority_level": priority_level,
+            "estimated_wait_time": estimated_wait_time,
+            "message": f"최우선 콜백이 접수되었습니다. {estimated_wait_time} 연락드릴 예정입니다.",
+            "scheduled_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "inquiry_summary": inquiry_summary
+        }
+
+    async def _handle_submit_detailed_zendesk_ticket(
+        self, payload: AgentToolRequestPayload
+    ) -> AgentToolResponsePayload:
+        """
+        상세 젠데스크 티켓 제출 도구
+        SOP Phase 4.2.b에 대응
+        """
+        urgency = payload.get("urgency", "Normal")
+        assigned_team = payload.get("assigned_team", "일반상담팀")
+        
+        # 티켓 ID 생성
+        ticket_id = f"ZD-{datetime.now().strftime('%Y%m%d')}-{random.randint(10000, 99999)}"
+        
+        # 우선순위별 SLA 시간
+        sla_hours = {
+            "Critical": 2,
+            "High": 8,
+            "Normal": 24
+        }
+        
+        expected_resolution = datetime.now() + timedelta(hours=sla_hours.get(urgency, 24))
+        
+        return {
+            "status": "success",
+            "ticket_id": ticket_id,
+            "urgency": urgency,
+            "assigned_team": assigned_team,
+            "sla_hours": sla_hours.get(urgency, 24),
+            "expected_resolution": expected_resolution.strftime("%Y-%m-%d %H:%M:%S"),
+            "message": f"상세 티켓 {ticket_id}가 {assigned_team}에 접수되었습니다.",
+            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+    async def _handle_save_csat_survey(
+        self, payload: AgentToolRequestPayload
+    ) -> AgentToolResponsePayload:
+        """
+        고객 만족도 조사 결과 저장 도구
+        SOP Phase 5.2.e에 대응
+        """
+        score = payload.get("score", "")
+        
+        if not score:
+            return {
+                "status": "error",
+                "message": "점수가 제공되지 않았습니다.",
+                "error_code": "MISSING_SCORE"
+            }
+        
+        try:
+            score_int = int(score)
+            if not (1 <= score_int <= 5):
+                return {
+                    "status": "error",
+                    "message": "점수는 1-5 사이여야 합니다.",
+                    "error_code": "INVALID_SCORE_RANGE"
+                }
+        except ValueError:
+            return {
+                "status": "error",
+                "message": "점수는 숫자여야 합니다.",
+                "error_code": "INVALID_SCORE_FORMAT"
+            }
+        
+        # 점수별 만족도 레벨
+        satisfaction_levels = {
+            1: "매우 불만족",
+            2: "불만족", 
+            3: "보통",
+            4: "만족",
+            5: "매우 만족"
+        }
+        
+        return {
+            "status": "success",
+            "score": score_int,
+            "satisfaction_level": satisfaction_levels[score_int],
+            "message": "고객 만족도 조사 결과가 저장되었습니다.",
+            "saved_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "feedback_id": f"CSAT-{datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(1000, 9999)}"
+        }

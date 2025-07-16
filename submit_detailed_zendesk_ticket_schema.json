@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "properties": {
+    "urgency": {
+      "type": "string",
+      "enum": ["Critical", "High", "Normal"],
+      "description": "긴급도 수준"
+    },
+    "assigned_team": {
+      "type": "string",
+      "enum": ["일반상담팀", "항공권 변경팀", "환불팀"],
+      "description": "담당팀"
+    }
+  },
+  "required": ["urgency", "assigned_team"]
+}

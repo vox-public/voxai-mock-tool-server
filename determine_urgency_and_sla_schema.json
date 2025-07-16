@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "inquiry_keywords": {
+      "type": "string",
+      "description": "문의 내용에서 추출한 키워드 목록 (쉼표로 구분된 문자열)"
+    }
+  },
+  "required": ["inquiry_keywords"]
+}

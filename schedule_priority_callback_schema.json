@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "inquiry_summary": {
+      "type": "string",
+      "description": "문의 내용 요약"
+    },
+    "urgency": {
+      "type": "string",
+      "enum": ["Critical", "High", "Normal"],
+      "description": "긴급도 수준"
+    }
+  },
+  "required": ["inquiry_summary", "urgency"]
+}

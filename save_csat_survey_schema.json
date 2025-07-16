@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "score": {
+      "type": "string",
+      "description": "고객 만족도 점수 (1-5)"
+    }
+  },
+  "required": ["score"]
+}
