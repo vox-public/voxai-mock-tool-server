@@ -23,7 +23,7 @@ async def handle_agent_tool(
     ),
 ) -> AgentToolResponsePayload:
     """
-    Vox.ai 에이전트로부터 특정 API 도구 호출을 수신하고 처리합니다.
+    Vox.ai 에이전트로부터 특정 API 도구 호출을 수신하고 처리합니다.j
     `tool_name` 경로는 Vox.ai 대시보드에 설정된 도구 이름과 일치해야 합니다.
     요청 본문은 해당 도구의 설정에 정의된 파라미터 스키마를 따릅니다.
     """

@@ -615,6 +615,11 @@ class AgentToolService:
                 "description": "이티켓 정보가 재발송되었습니다.",
                 "content": "요청하신 전자항공권을 다시 발송해 드렸습니다.",
             },
+            "extra-service": {
+                "subject": "부가서비스 재발송",
+                "description": "부가서비스 정보가 재발송되었습니다.",
+                "content": "요청하신 부가서비스를 다시 발송해 드렸습니다.",
+            },
             "reservation": {
                 "subject": "예약 정보 재발송",
                 "description": "예약 정보가 재발송되었습니다.",
