@@ -1,0 +1,150 @@
+{
+  "tool_name": "send_email_notification",
+  "description": "이메일 알림 발송 도구 - 이티켓/예약 정보 재발송 등에 사용",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "type": {
+        "type": "string",
+        "description": "알림 타입 (e-ticket, reservation, boarding-pass)",
+        "enum": ["e-ticket", "reservation", "boarding-pass"],
+        "required": true
+      },
+      "reservation_number": {
+        "type": "string",
+        "description": "예약 번호 또는 PNR 번호",
+        "required": true,
+        "example": "KFMNPQ"
+      },
+      "email_address": {
+        "type": "string",
+        "description": "알림을 받을 이메일 주소 (선택사항, Mock 도구에서 기본값 사용)",
+        "format": "email",
+        "required": false,
+        "default": "customer@example.com",
+        "example": "customer@example.com"
+      }
+    },
+    "required": ["type", "reservation_number"]
+  },
+  "responses": {
+    "success": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "value": "success"
+        },
+        "email_id": {
+          "type": "string",
+          "description": "생성된 이메일 ID",
+          "example": "EMAIL-20241201120000-1234"
+        },
+        "type": {
+          "type": "string",
+          "description": "처리된 알림 타입"
+        },
+        "reservation_number": {
+          "type": "string",
+          "description": "처리된 예약 번호"
+        },
+        "recipient_email": {
+          "type": "string",
+          "description": "수신자 이메일 주소"
+        },
+        "subject": {
+          "type": "string",
+          "description": "이메일 제목"
+        },
+        "message": {
+          "type": "string",
+          "description": "발송 완료 메시지"
+        },
+        "sent_at": {
+          "type": "string",
+          "description": "발송 시각",
+          "format": "datetime"
+        },
+        "delivery_status": {
+          "type": "string",
+          "description": "발송 상태",
+          "value": "sent"
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "value": "error"
+        },
+        "message": {
+          "type": "string",
+          "description": "오류 메시지"
+        },
+        "error_code": {
+          "type": "string",
+          "description": "오류 코드",
+          "enum": [
+            "MISSING_TYPE",
+            "MISSING_RESERVATION_NUMBER",
+            "UNSUPPORTED_TYPE"
+          ]
+        },
+        "supported_types": {
+          "type": "array",
+          "description": "지원되는 알림 타입 목록 (오류 시에만 포함)",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "usage_examples": [
+    {
+      "description": "이티켓 재발송 (기본 이메일 사용)",
+      "request": {
+        "type": "e-ticket",
+        "reservation_number": "KFMNPQ"
+      },
+      "response": {
+        "status": "success",
+        "email_id": "EMAIL-20241201120000-1234",
+        "type": "e-ticket",
+        "reservation_number": "KFMNPQ",
+        "recipient_email": "customer@example.com",
+        "subject": "전자항공권 재발송",
+        "message": "요청하신 전자항공권을 다시 발송해 드렸습니다. 스팸함도 확인해 주세요.",
+        "sent_at": "2024-12-01 12:00:00",
+        "delivery_status": "sent"
+      }
+    },
+    {
+      "description": "예약 정보 재발송 (커스텀 이메일 사용)",
+      "request": {
+        "type": "reservation",
+        "reservation_number": "ABC123",
+        "email_address": "user@test.com"
+      },
+      "response": {
+        "status": "success",
+        "email_id": "EMAIL-20241201120100-5678",
+        "type": "reservation",
+        "reservation_number": "ABC123",
+        "recipient_email": "user@test.com",
+        "subject": "예약 정보 재발송",
+        "message": "요청하신 예약 정보를 다시 발송해 드렸습니다. 스팸함도 확인해 주세요.",
+        "sent_at": "2024-12-01 12:01:00",
+        "delivery_status": "sent"
+      }
+    }
+  ],
+  "notes": [
+    "Mock 도구로서 이메일 주소는 선택사항이며, 제공되지 않으면 기본값(customer@example.com)을 사용합니다.",
+    "실제 프로덕션에서는 외부 이메일 서비스 API를 통해 이메일을 발송해야 합니다.",
+    "현재는 시뮬레이션으로 항상 성공 응답을 반환합니다.",
+    "스팸 필터링으로 인해 고객에게 스팸함 확인을 안내하는 메시지가 포함됩니다."
+  ]
+}

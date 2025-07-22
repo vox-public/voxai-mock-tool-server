@@ -1,0 +1,231 @@
+{
+  "tool_name": "calculate_cancellation_fee",
+  "description": "취소 수수료 계산 도구 - 예약 정보를 바탕으로 항공사/여행사 수수료 및 예상 환불액 계산",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "reservation_no": {
+        "type": "string",
+        "description": "예약 번호 또는 PNR 번호",
+        "required": true,
+        "example": "KFMNPQ"
+      }
+    },
+    "required": ["reservation_no"]
+  },
+  "responses": {
+    "success": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "value": "success"
+        },
+        "reservation_no": {
+          "type": "string",
+          "description": "처리된 예약 번호"
+        },
+        "reservation_info": {
+          "type": "object",
+          "properties": {
+            "fare_type": {
+              "type": "string",
+              "description": "운임 종류",
+              "example": "이코노미세이버"
+            },
+            "original_amount": {
+              "type": "integer",
+              "description": "원래 결제 금액 (원)"
+            },
+            "ticketing_date": {
+              "type": "string",
+              "description": "발권일",
+              "format": "date"
+            },
+            "departure_date": {
+              "type": "string",
+              "description": "출발일",
+              "format": "date"
+            },
+            "days_until_departure": {
+              "type": "integer",
+              "description": "출발까지 남은 일수"
+            }
+          }
+        },
+        "fee_breakdown": {
+          "type": "object",
+          "properties": {
+            "airline_fee": {
+              "type": "integer",
+              "description": "항공사 취소 수수료 (원)"
+            },
+            "agency_fee": {
+              "type": "integer",
+              "description": "여행사 수수료 (원)"
+            },
+            "ticketing_fee_refundable": {
+              "type": "boolean",
+              "description": "발권 수수료 환불 가능 여부"
+            },
+            "ticketing_fee_amount": {
+              "type": "integer",
+              "description": "발권 수수료 금액 (원)"
+            },
+            "total_cancellation_fee": {
+              "type": "integer",
+              "description": "총 취소 수수료 (원)"
+            }
+          }
+        },
+        "refund_calculation": {
+          "type": "object",
+          "properties": {
+            "original_payment": {
+              "type": "integer",
+              "description": "원래 결제 금액 (원)"
+            },
+            "total_fees": {
+              "type": "integer",
+              "description": "총 수수료 (원)"
+            },
+            "expected_refund": {
+              "type": "integer",
+              "description": "예상 환불 금액 (원)"
+            }
+          }
+        },
+        "message": {
+          "type": "string",
+          "description": "계산 결과 메시지"
+        },
+        "calculated_at": {
+          "type": "string",
+          "description": "계산 시각",
+          "format": "datetime"
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "value": "error"
+        },
+        "message": {
+          "type": "string",
+          "description": "오류 메시지"
+        },
+        "error_code": {
+          "type": "string",
+          "description": "오류 코드",
+          "enum": ["MISSING_RESERVATION_NO"]
+        }
+      }
+    }
+  },
+  "fee_structure": {
+    "airline_fees": {
+      "description": "운임 종류 및 취소 시점에 따른 항공사 수수료",
+      "rules": [
+        {
+          "fare_type": "이코노미세이버",
+          "14_days_or_more": "100,000원 또는 운임의 20% 중 적은 금액",
+          "7_to_13_days": "150,000원 또는 운임의 30% 중 적은 금액",
+          "less_than_7_days": "200,000원 또는 운임의 50% 중 적은 금액"
+        },
+        {
+          "fare_type": "비즈니스석",
+          "7_days_or_more": "50,000원 또는 운임의 10% 중 적은 금액",
+          "less_than_7_days": "100,000원 또는 운임의 20% 중 적은 금액"
+        },
+        {
+          "fare_type": "일반운임",
+          "14_days_or_more": "50,000원 또는 운임의 10% 중 적은 금액",
+          "7_to_13_days": "80,000원 또는 운임의 15% 중 적은 금액",
+          "less_than_7_days": "120,000원 또는 운임의 25% 중 적은 금액"
+        }
+      ]
+    },
+    "agency_fee": {
+      "description": "여행사 수수료 (고정)",
+      "amount": 30000
+    },
+    "ticketing_fee": {
+      "description": "발권 수수료",
+      "amount": 15000,
+      "refundable_condition": "출발 7일 전까지 취소 시 환불 가능"
+    }
+  },
+  "usage_examples": [
+    {
+      "description": "일반 예약의 취소 수수료 계산",
+      "request": {
+        "reservation_no": "KFMNPQ"
+      },
+      "response": {
+        "status": "success",
+        "reservation_no": "KFMNPQ",
+        "reservation_info": {
+          "fare_type": "이코노미플렉스",
+          "original_amount": 850000,
+          "ticketing_date": "2024-11-15",
+          "departure_date": "2024-12-20",
+          "days_until_departure": 18
+        },
+        "fee_breakdown": {
+          "airline_fee": 50000,
+          "agency_fee": 30000,
+          "ticketing_fee_refundable": true,
+          "ticketing_fee_amount": 15000,
+          "total_cancellation_fee": 80000
+        },
+        "refund_calculation": {
+          "original_payment": 850000,
+          "total_fees": 80000,
+          "expected_refund": 770000
+        },
+        "message": "취소 수수료가 계산되었습니다. 예상 환불액: 770,000원",
+        "calculated_at": "2024-12-01 14:30:00"
+      }
+    },
+    {
+      "description": "세이버 운임 급박 취소 수수료 계산",
+      "request": {
+        "reservation_no": "ABC123"
+      },
+      "response": {
+        "status": "success",
+        "reservation_no": "ABC123",
+        "reservation_info": {
+          "fare_type": "이코노미세이버",
+          "original_amount": 450000,
+          "ticketing_date": "2024-11-20",
+          "departure_date": "2024-12-05",
+          "days_until_departure": 4
+        },
+        "fee_breakdown": {
+          "airline_fee": 200000,
+          "agency_fee": 30000,
+          "ticketing_fee_refundable": false,
+          "ticketing_fee_amount": 15000,
+          "total_cancellation_fee": 245000
+        },
+        "refund_calculation": {
+          "original_payment": 450000,
+          "total_fees": 245000,
+          "expected_refund": 205000
+        },
+        "message": "취소 수수료가 계산되었습니다. 예상 환불액: 205,000원",
+        "calculated_at": "2024-12-01 14:30:00"
+      }
+    }
+  ],
+  "notes": [
+    "Mock 도구로서 예약 정보는 예약 번호를 기반으로 일관된 시뮬레이션 데이터를 생성합니다.",
+    "실제 프로덕션에서는 예약 시스템에서 실제 예약 정보를 조회해야 합니다.",
+    "취소 수수료는 항공사별, 운임 규정별로 상이할 수 있습니다.",
+    "발권 수수료는 출발 7일 전까지 취소 시에만 환불 가능합니다."
+  ]
+}

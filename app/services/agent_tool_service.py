@@ -49,6 +49,10 @@ class AgentToolService:
             return await self._handle_submit_detailed_zendesk_ticket(payload)
         elif tool_name == "save_csat_survey":
             return await self._handle_save_csat_survey(payload)
+        elif tool_name == "send_email_notification":
+            return await self._handle_send_email_notification(payload)
+        elif tool_name == "calculate_cancellation_fee":
+            return await self._handle_calculate_cancellation_fee(payload)
         else:
             logger.warning(f"알 수 없는 도구 호출: {tool_name}")
             return {
@@ -386,31 +390,31 @@ class AgentToolService:
         SOP Phase 2.1.b에 대응
         """
         pnr_input = payload.get("pnr_input", "").strip().upper()
-        
+
         if not pnr_input:
             return {
                 "status": "error",
                 "message": "PNR 번호가 제공되지 않았습니다.",
                 "valid": False,
-                "error_code": "MISSING_PNR"
+                "error_code": "MISSING_PNR",
             }
-        
+
         # PNR 형식 검증: 6자리 영문+숫자 조합
-        pnr_pattern = re.compile(r'^[A-Z0-9]{6}$')
-        
+        pnr_pattern = re.compile(r"^[A-Z0-9]{6}$")
+
         if pnr_pattern.match(pnr_input):
             return {
                 "status": "success",
                 "message": "유효한 PNR 형식입니다.",
                 "valid": True,
-                "pnr": pnr_input
+                "pnr": pnr_input,
             }
         else:
             return {
-                "status": "error", 
+                "status": "error",
                 "message": "잘못된 PNR 형식입니다. 6자리 영문과 숫자 조합이어야 합니다.",
                 "valid": False,
-                "error_code": "INVALID_PNR_FORMAT"
+                "error_code": "INVALID_PNR_FORMAT",
             }
 
     async def _handle_determine_urgency_and_sla(
@@ -421,34 +425,38 @@ class AgentToolService:
         SOP Phase 4.1.a에 대응
         """
         inquiry_keywords = payload.get("inquiry_keywords", "")
-        
+
         # 키워드 문자열을 리스트로 변환
-        keywords_list = [keyword.strip() for keyword in inquiry_keywords.split(",") if keyword.strip()]
-        
+        keywords_list = [
+            keyword.strip()
+            for keyword in inquiry_keywords.split(",")
+            if keyword.strip()
+        ]
+
         urgency = "Normal"
         assigned_team = "일반상담팀"
-        
+
         # 키워드 기반 판정
         urgent_keywords = ["긴급", "오늘", "지금", "당장", "공항", "출발"]
         change_keywords = ["변경", "수정", "바꾸기"]
         refund_keywords = ["환불", "취소", "돌려받기"]
-        
+
         keywords_text = " ".join(keywords_list)
-        
+
         if any(keyword in keywords_text for keyword in urgent_keywords):
             urgency = "Critical"
-        
+
         if any(keyword in keywords_text for keyword in change_keywords):
             assigned_team = "항공권 변경팀"
         elif any(keyword in keywords_text for keyword in refund_keywords):
             assigned_team = "환불팀"
-        
+
         return {
             "status": "success",
             "urgency": urgency,
             "assigned_team": assigned_team,
             "message": f"긴급도: {urgency}, 담당팀: {assigned_team}로 판정되었습니다.",
-            "keywords_processed": keywords_list
+            "keywords_processed": keywords_list,
         }
 
     async def _handle_schedule_priority_callback(
@@ -460,10 +468,12 @@ class AgentToolService:
         """
         inquiry_summary = payload.get("inquiry_summary", "")
         urgency = payload.get("urgency", "Normal")
-        
+
         # 콜백 ID 생성
-        callback_id = f"CB-{datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(1000, 9999)}"
-        
+        callback_id = (
+            f"CB-{datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(1000, 9999)}"
+        )
+
         # 우선순위별 예상 대기시간
         if urgency == "Critical":
             estimated_wait_time = "5분 이내"
@@ -474,7 +484,7 @@ class AgentToolService:
         else:
             estimated_wait_time = "30분 이내"
             priority_level = 3
-        
+
         return {
             "status": "success",
             "callback_id": callback_id,
@@ -482,7 +492,7 @@ class AgentToolService:
             "estimated_wait_time": estimated_wait_time,
             "message": f"최우선 콜백이 접수되었습니다. {estimated_wait_time} 연락드릴 예정입니다.",
             "scheduled_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "inquiry_summary": inquiry_summary
+            "inquiry_summary": inquiry_summary,
         }
 
     async def _handle_submit_detailed_zendesk_ticket(
@@ -494,19 +504,19 @@ class AgentToolService:
         """
         urgency = payload.get("urgency", "Normal")
         assigned_team = payload.get("assigned_team", "일반상담팀")
-        
+
         # 티켓 ID 생성
-        ticket_id = f"ZD-{datetime.now().strftime('%Y%m%d')}-{random.randint(10000, 99999)}"
-        
+        ticket_id = (
+            f"ZD-{datetime.now().strftime('%Y%m%d')}-{random.randint(10000, 99999)}"
+        )
+
         # 우선순위별 SLA 시간
-        sla_hours = {
-            "Critical": 2,
-            "High": 8,
-            "Normal": 24
-        }
-        
-        expected_resolution = datetime.now() + timedelta(hours=sla_hours.get(urgency, 24))
-        
+        sla_hours = {"Critical": 2, "High": 8, "Normal": 24}
+
+        expected_resolution = datetime.now() + timedelta(
+            hours=sla_hours.get(urgency, 24)
+        )
+
         return {
             "status": "success",
             "ticket_id": ticket_id,
@@ -515,7 +525,7 @@ class AgentToolService:
             "sla_hours": sla_hours.get(urgency, 24),
             "expected_resolution": expected_resolution.strftime("%Y-%m-%d %H:%M:%S"),
             "message": f"상세 티켓 {ticket_id}가 {assigned_team}에 접수되었습니다.",
-            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
 
     async def _handle_save_csat_survey(
@@ -526,43 +536,274 @@ class AgentToolService:
         SOP Phase 5.2.e에 대응
         """
         score = payload.get("score", "")
-        
+
         if not score:
             return {
                 "status": "error",
                 "message": "점수가 제공되지 않았습니다.",
-                "error_code": "MISSING_SCORE"
+                "error_code": "MISSING_SCORE",
             }
-        
+
         try:
             score_int = int(score)
             if not (1 <= score_int <= 5):
                 return {
                     "status": "error",
                     "message": "점수는 1-5 사이여야 합니다.",
-                    "error_code": "INVALID_SCORE_RANGE"
+                    "error_code": "INVALID_SCORE_RANGE",
                 }
         except ValueError:
             return {
                 "status": "error",
                 "message": "점수는 숫자여야 합니다.",
-                "error_code": "INVALID_SCORE_FORMAT"
+                "error_code": "INVALID_SCORE_FORMAT",
             }
-        
+
         # 점수별 만족도 레벨
         satisfaction_levels = {
             1: "매우 불만족",
-            2: "불만족", 
+            2: "불만족",
             3: "보통",
             4: "만족",
-            5: "매우 만족"
+            5: "매우 만족",
         }
-        
+
         return {
             "status": "success",
             "score": score_int,
             "satisfaction_level": satisfaction_levels[score_int],
             "message": "고객 만족도 조사 결과가 저장되었습니다.",
             "saved_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "feedback_id": f"CSAT-{datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(1000, 9999)}"
+            "feedback_id": f"CSAT-{datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(1000, 9999)}",
+        }
+
+    async def _handle_send_email_notification(
+        self, payload: AgentToolRequestPayload
+    ) -> AgentToolResponsePayload:
+        """
+        이메일 알림 발송 도구
+        이티켓/예약 정보 재발송 등에 사용
+        """
+        notification_type = payload.get("type", "").strip().lower()
+        reservation_number = payload.get("reservation_number", "").strip()
+        # Mock 도구이므로 기본 이메일 주소 사용
+        email_address = payload.get("email_address", "customer@example.com").strip()
+
+        # 필수 파라미터 검증
+        if not notification_type:
+            return {
+                "status": "error",
+                "message": "알림 타입이 제공되지 않았습니다.",
+                "error_code": "MISSING_TYPE",
+            }
+
+        if not reservation_number:
+            return {
+                "status": "error",
+                "message": "예약 번호가 제공되지 않았습니다.",
+                "error_code": "MISSING_RESERVATION_NUMBER",
+            }
+
+        logger.info(
+            f"send_email_notification 처리 중, type: {notification_type}, reservation: {reservation_number}, email: {email_address}"
+        )
+
+        # 지원되는 알림 타입별 처리
+        supported_types = {
+            "e-ticket": {
+                "subject": "전자항공권 재발송",
+                "description": "이티켓 정보가 재발송되었습니다.",
+                "content": "요청하신 전자항공권을 다시 발송해 드렸습니다.",
+            },
+            "reservation": {
+                "subject": "예약 정보 재발송",
+                "description": "예약 정보가 재발송되었습니다.",
+                "content": "요청하신 예약 정보를 다시 발송해 드렸습니다.",
+            },
+            "boarding-pass": {
+                "subject": "탑승권 재발송",
+                "description": "탑승권 정보가 재발송되었습니다.",
+                "content": "요청하신 탑승권을 다시 발송해 드렸습니다.",
+            },
+        }
+
+        if notification_type not in supported_types:
+            return {
+                "status": "error",
+                "message": f"지원되지 않는 알림 타입: {notification_type}",
+                "supported_types": list(supported_types.keys()),
+                "error_code": "UNSUPPORTED_TYPE",
+            }
+
+        type_info = supported_types[notification_type]
+
+        # 이메일 발송 시뮬레이션 (실제로는 외부 이메일 서비스 API 호출)
+        email_id = f"EMAIL-{datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(1000, 9999)}"
+
+        response_data = {
+            "status": "success",
+            "email_id": email_id,
+            "type": notification_type,
+            "reservation_number": reservation_number,
+            "recipient_email": email_address,
+            "subject": type_info["subject"],
+            "message": f"{type_info['content']} 스팸함도 확인해 주세요.",
+            "sent_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "delivery_status": "sent",
+        }
+
+        logger.info(
+            f"send_email_notification 처리 완료: {email_id}, type: {notification_type}"
+        )
+        return response_data
+
+    async def _handle_calculate_cancellation_fee(
+        self, payload: AgentToolRequestPayload
+    ) -> AgentToolResponsePayload:
+        """
+        취소 수수료 계산 도구
+        예약 정보를 바탕으로 항공사/여행사 수수료 및 예상 환불액 계산
+        """
+        reservation_no = payload.get("reservation_no", "").strip()
+
+        # 필수 파라미터 검증
+        if not reservation_no:
+            return {
+                "status": "error",
+                "message": "예약 번호가 제공되지 않았습니다.",
+                "error_code": "MISSING_RESERVATION_NO",
+            }
+
+        logger.info(
+            f"calculate_cancellation_fee 처리 중, reservation_no: {reservation_no}"
+        )
+
+        # 예약 정보 시뮬레이션 (실제로는 예약 시스템에서 조회)
+        mock_reservation_info = self._get_mock_reservation_info(reservation_no)
+
+        # 취소 수수료 계산
+        fee_calculation = self._calculate_fees(mock_reservation_info)
+
+        response_data = {
+            "status": "success",
+            "reservation_no": reservation_no,
+            "reservation_info": {
+                "fare_type": mock_reservation_info["fare_type"],
+                "original_amount": mock_reservation_info["original_amount"],
+                "ticketing_date": mock_reservation_info["ticketing_date"],
+                "departure_date": mock_reservation_info["departure_date"],
+                "days_until_departure": mock_reservation_info["days_until_departure"],
+            },
+            "fee_breakdown": {
+                "airline_fee": fee_calculation["airline_fee"],
+                "agency_fee": fee_calculation["agency_fee"],
+                "ticketing_fee_refundable": fee_calculation["ticketing_fee_refundable"],
+                "ticketing_fee_amount": fee_calculation["ticketing_fee_amount"],
+                "total_cancellation_fee": fee_calculation["total_cancellation_fee"],
+            },
+            "refund_calculation": {
+                "original_payment": mock_reservation_info["original_amount"],
+                "total_fees": fee_calculation["total_cancellation_fee"],
+                "expected_refund": fee_calculation["expected_refund"],
+            },
+            "message": f"취소 수수료가 계산되었습니다. 예상 환불액: {fee_calculation['expected_refund']:,}원",
+            "calculated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+
+        logger.info(
+            f"calculate_cancellation_fee 처리 완료: {reservation_no}, 예상환불: {fee_calculation['expected_refund']:,}원"
+        )
+        return response_data
+
+    def _get_mock_reservation_info(self, reservation_no: str) -> dict:
+        """모의 예약 정보 생성"""
+        # 예약번호 기반으로 일관된 시뮬레이션 데이터 생성
+        hash_value = abs(hash(reservation_no)) % 1000
+
+        fare_types = [
+            "일반석",
+            "프리미엄석",
+            "비즈니스석",
+            "이코노미세이버",
+            "이코노미플렉스",
+        ]
+        fare_type = fare_types[hash_value % len(fare_types)]
+
+        # 운임 종류별 기본 금액
+        base_amounts = {
+            "일반석": 800000,
+            "프리미엄석": 1200000,
+            "비즈니스석": 2500000,
+            "이코노미세이버": 450000,
+            "이코노미플렉스": 650000,
+        }
+
+        original_amount = base_amounts[fare_type] + (hash_value % 200000)
+
+        # 발권일과 출발일 시뮬레이션
+        ticketing_date = datetime.now() - timedelta(days=(hash_value % 30) + 1)
+        departure_date = datetime.now() + timedelta(days=(hash_value % 60) + 1)
+        days_until_departure = (departure_date - datetime.now()).days
+
+        return {
+            "fare_type": fare_type,
+            "original_amount": original_amount,
+            "ticketing_date": ticketing_date.strftime("%Y-%m-%d"),
+            "departure_date": departure_date.strftime("%Y-%m-%d"),
+            "days_until_departure": days_until_departure,
+        }
+
+    def _calculate_fees(self, reservation_info: dict) -> dict:
+        """취소 수수료 계산 로직"""
+        fare_type = reservation_info["fare_type"]
+        original_amount = reservation_info["original_amount"]
+        days_until_departure = reservation_info["days_until_departure"]
+
+        # 항공사 취소 수수료 (운임 종류 및 취소 시점별)
+        airline_fee = 0
+        if "세이버" in fare_type:
+            # 세이버 운임은 높은 수수료
+            if days_until_departure >= 14:
+                airline_fee = min(100000, original_amount * 0.2)
+            elif days_until_departure >= 7:
+                airline_fee = min(150000, original_amount * 0.3)
+            else:
+                airline_fee = min(200000, original_amount * 0.5)
+        elif fare_type == "비즈니스석":
+            # 비즈니스석은 낮은 수수료
+            if days_until_departure >= 7:
+                airline_fee = min(50000, original_amount * 0.1)
+            else:
+                airline_fee = min(100000, original_amount * 0.2)
+        else:
+            # 일반 운임
+            if days_until_departure >= 14:
+                airline_fee = min(50000, original_amount * 0.1)
+            elif days_until_departure >= 7:
+                airline_fee = min(80000, original_amount * 0.15)
+            else:
+                airline_fee = min(120000, original_amount * 0.25)
+
+        # 여행사 수수료 (고정)
+        agency_fee = 30000
+
+        # 발권 수수료 환불 여부 및 금액
+        ticketing_fee_amount = 15000
+        ticketing_fee_refundable = days_until_departure >= 7
+
+        # 총 취소 수수료
+        total_cancellation_fee = airline_fee + agency_fee
+        if not ticketing_fee_refundable:
+            total_cancellation_fee += ticketing_fee_amount
+
+        # 예상 환불액
+        expected_refund = max(0, original_amount - total_cancellation_fee)
+
+        return {
+            "airline_fee": int(airline_fee),
+            "agency_fee": int(agency_fee),
+            "ticketing_fee_refundable": ticketing_fee_refundable,
+            "ticketing_fee_amount": ticketing_fee_amount,
+            "total_cancellation_fee": int(total_cancellation_fee),
+            "expected_refund": int(expected_refund),
         }
